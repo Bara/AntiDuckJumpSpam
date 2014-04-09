@@ -6,7 +6,7 @@
 #undef REQUIRE_PLUGIN
 #include <updater>
 
-#define ADJS_VERSION "1.0.0"
+#define ADJS_VERSION "1.0.1"
 
 #define UPDATE_URL    "https://bara.in/update/antiduckjumpspam.txt"
 
@@ -42,7 +42,7 @@ public Plugin:myinfo =
 
 public OnPluginStart()
 {
-	CreateConVar("adjs_version", ADJS_VERSION, "Only Headshot", FCVAR_NOTIFY|FCVAR_DONTRECORD);
+	CreateConVar("adjs_version", ADJS_VERSION, "Anti Duck Jump Spam", FCVAR_NOTIFY|FCVAR_DONTRECORD);
 
 	AutoExecConfig_SetFile("plugin.anti_duckjump_spam");
 	AutoExecConfig_SetCreateFile(true);
