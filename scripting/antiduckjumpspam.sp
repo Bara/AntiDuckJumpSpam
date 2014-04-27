@@ -6,7 +6,7 @@
 #undef REQUIRE_PLUGIN
 #include <updater>
 
-#define ADJS_VERSION "1.0.1"
+#define ADJS_VERSION "1.0.2"
 
 #define UPDATE_URL    "https://bara.in/update/antiduckjumpspam.txt"
 
@@ -17,6 +17,7 @@ new Handle:g_hRestrictDuck = INVALID_HANDLE;
 new Handle:g_hResetDuck = INVALID_HANDLE;
 new Handle:g_hDuckEnable = INVALID_HANDLE;
 new Handle:g_hDuckPerma = INVALID_HANDLE;
+new Handle:g_hDuckTeam = INVALID_HANDLE;
 new Handle:g_hDuckTimer[MAXPLAYERS+1] = {INVALID_HANDLE,...};
 new Handle:g_hDuckReset[MAXPLAYERS+1] = {INVALID_HANDLE,...};
 
@@ -28,6 +29,7 @@ new Handle:g_hRestrictJump = INVALID_HANDLE;
 new Handle:g_hResetJumps = INVALID_HANDLE;
 new Handle:g_hJumpEnable = INVALID_HANDLE;
 new Handle:g_hJumpPerma = INVALID_HANDLE;
+new Handle:g_hJumpTeam = INVALID_HANDLE;
 new Handle:g_hJumpTimer[MAXPLAYERS+1] = {INVALID_HANDLE,...};
 new Handle:g_hJumpReset[MAXPLAYERS+1] = {INVALID_HANDLE,...};
 
@@ -52,12 +54,14 @@ public OnPluginStart()
 	g_hAllowJumps = AutoExecConfig_CreateConVar("anti_jump_count", "3", "After how many jumps, jumping is blocked for X (anti_jump_time) seconds?");
 	g_hRestrictJump = AutoExecConfig_CreateConVar("anti_jump_time", "3.0", "Set jump block time in seconds");
 	g_hResetJumps = AutoExecConfig_CreateConVar("anti_jump_reset", "5.0", "After how many seconds jumps will reset to zero, if anti_jump_count were not reached?");
+	g_hJumpTeam = AutoExecConfig_CreateConVar("anti_jump_team", "1", "Which team should not be allowed to jump? 0 - Disables; 1 - Both; 2 - Terrorist; 3 - Counter-Terrorist");
 
 	g_hDuckEnable = AutoExecConfig_CreateConVar("anti_duck_enable", "1", "Anti duck enable = 1; disable = 0", _, true, 0.0, true, 1.0);
 	g_hDuckPerma = AutoExecConfig_CreateConVar("anti_duck_perma", "0", "If anti duck should be permanent enabled set this to 1", _, true, 0.0, true, 1.0);
 	g_hAllowDuck = AutoExecConfig_CreateConVar("anti_duck_count", "3", "After how many ducks, duck is blocked for X (anti_duck_time) seconds?");
 	g_hRestrictDuck = AutoExecConfig_CreateConVar("anti_duck_time", "3.0", "Set duck block time in seconds");
 	g_hResetDuck = AutoExecConfig_CreateConVar("anti_duck_reset", "3.0", "After how many seconds ducks will reset to zero, if anti_duck_count were not reached?");
+	g_hDuckTeam = AutoExecConfig_CreateConVar("anti_duck_team", "1", "Which team should not be allowed to duck? 0 - Disables; 1 - Both; 2 - Terrorist; 3 - Counter-Terrorist");
 
 	AutoExecConfig_CleanFile();
 	AutoExecConfig_ExecuteFile();
@@ -103,17 +107,20 @@ public Action:Event_PlayerJump(Handle:event, const String:name[], bool:dontBroad
 		{
 			new client = GetClientOfUserId(GetEventInt(event, "userid"));
 
-			g_iJumps[client]++;
-
-			if(g_hJumpReset[client] == INVALID_HANDLE)
+			if(GetConVarInt(g_hJumpTeam) == 1 || GetConVarInt(g_hJumpTeam) == GetClientTeam(client))
 			{
-				g_hJumpReset[client] = CreateTimer(GetConVarFloat(g_hResetJumps), Timer_ResetJump2, client);
-			}
+				g_iJumps[client]++;
 
-			if(g_iJumps[client] == GetConVarInt(g_hAllowJumps))
-			{
-				g_bJump[client] = true;
-				g_hJumpTimer[client] = CreateTimer(GetConVarFloat(g_hRestrictJump), Timer_ResetJump, client);
+				if(g_hJumpReset[client] == INVALID_HANDLE)
+				{
+					g_hJumpReset[client] = CreateTimer(GetConVarFloat(g_hResetJumps), Timer_ResetJump2, client);
+				}
+
+				if(g_iJumps[client] == GetConVarInt(g_hAllowJumps))
+				{
+					g_bJump[client] = true;
+					g_hJumpTimer[client] = CreateTimer(GetConVarFloat(g_hRestrictJump), Timer_ResetJump, client);
+				}
 			}
 		}
 	}
@@ -157,18 +164,21 @@ public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:ang
 	{
 		if(GetConVarInt(g_hDuckEnable))
 		{
-			if(GetConVarInt(g_hDuckPerma))
+			if(GetConVarInt(g_hDuckTeam) == 1 || GetConVarInt(g_hDuckTeam) == GetClientTeam(client))
 			{
-				buttons &= ~IN_DUCK;
-				return Plugin_Changed;
-			}
-			
-			g_bIsDuck[client] = true;
+				if(GetConVarInt(g_hDuckPerma))
+				{
+					buttons &= ~IN_DUCK;
+					return Plugin_Changed;
+				}
+				
+				g_bIsDuck[client] = true;
 
-			if(g_bDuck[client])
-			{
-				buttons &= ~IN_DUCK;
-				return Plugin_Changed;
+				if(g_bDuck[client])
+				{
+					buttons &= ~IN_DUCK;
+					return Plugin_Changed;
+				}
 			}
 		}
 	}

@@ -4,10 +4,10 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.0.1"
+			"Latest"	"1.0.2"
 		}
 		
-		"Notes"	"Updated public cvar"
+		"Notes"	"Added 2 CVars (anti_jump_team, anti_duck_team)"
 	}
 	
 	"Files"
